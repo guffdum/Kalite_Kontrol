@@ -14,7 +14,7 @@ jobs:
         with:
           python-version: '3.11'
       - run: pip install pandas openpyxl
-      - run: python generate_html.py
+      - run: python kutu_kategori_filtre.py
       - uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
