@@ -1,10 +1,8 @@
 name: Build and Deploy
-
 on:
   push:
     branches:
       - main
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -22,3 +20,4 @@ jobs:
           publish_dir: .
           publish_branch: gh-pages
           exclude_assets: '.github,*.py,*.xlsx'
+          force_orphan: true
