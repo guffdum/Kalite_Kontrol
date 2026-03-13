@@ -91,6 +91,8 @@ def build_data():
 
 def write_html(data):
     data_json = json.dumps(data, ensure_ascii=False, default=str)
+    # Escape forward slashes to prevent </script> in cell values from breaking the HTML
+    data_json = data_json.replace("<", "\u003c").replace(">", "\u003e").replace("&", "\u0026")
 
     html = """<!DOCTYPE html>
 <html lang="tr">
@@ -369,8 +371,10 @@ function handleSearch(e) {
   renderResults();
 }
 
-document.addEventListener("DOMContentLoaded", init);
-window.addEventListener("load", init);
+var _inited = false;
+function safeInit() { if (_inited) return; _inited = true; init(); }
+document.addEventListener("DOMContentLoaded", safeInit);
+window.addEventListener("load", safeInit);
 </script>
 </body>
 </html>"""
