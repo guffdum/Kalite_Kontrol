@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kutu Filtre Goruntüleyici</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: "Segoe UI", Arial, sans-serif; background: #faf4f0; color: #2e1a0e; }
+  header { background: linear-gradient(135deg, #7a3418, #a04720); color: white; padding: 20px 30px; box-shadow: 0 2px 8px rgba(122,52,24,0.35); }
+  header h1 { font-size: 1.6rem; font-weight: 600; }
+  header p  { font-size: 0.85rem; opacity: 0.8; margin-top: 4px; }
+  .container { max-width: 1300px; margin: 0 auto; padding: 24px 16px; }
+  .filters { display: flex; flex-direction: column; gap: 18px; margin-bottom: 28px; }
+  .filter-row { background: white; border-radius: 10px; padding: 16px 20px; box-shadow: 0 1px 5px rgba(160,71,32,0.1); }
+  .filter-label { font-size: 0.75rem; font-weight: 700; color: #a04720; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+  .btn-group { display: flex; flex-wrap: wrap; gap: 8px; }
+  .kutu-btn { padding: 8px 18px; border: 2px solid #d25e28; background: white; color: #d25e28; border-radius: 20px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.18s; }
+  .kutu-btn:hover { background: #f5e6de; }
+  .kutu-btn.active { background: #d25e28; color: white; }
+  .kat-btn { padding: 8px 18px; border: 2px solid #7a3418; background: white; color: #7a3418; border-radius: 20px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.18s; text-transform: capitalize; }
+  .kat-btn:hover { background: #f5e6de; }
+  .kat-btn.active { background: #7a3418; color: white; }
+  .section-title { font-size: 1.1rem; font-weight: 700; color: #7a3418; margin-bottom: 14px; padding-bottom: 6px; border-bottom: 2px solid #f0d0be; }
+  .no-result { text-align: center; padding: 40px; color: #b07050; font-size: 1rem; }
+  .file-block { background: white; border-radius: 10px; box-shadow: 0 1px 6px rgba(160,71,32,0.12); margin-bottom: 20px; overflow: hidden; }
+  .file-header { background: #d25e28; color: white; padding: 12px 18px; font-weight: 700; font-size: 1rem; display: flex; align-items: center; gap: 10px; }
+  .file-header .badge { background: rgba(255,255,255,0.25); border-radius: 12px; padding: 2px 10px; font-size: 0.78rem; font-weight: 500; }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.87rem; }
+  thead tr { background: #f5e6de; }
+  thead th { padding: 9px 13px; text-align: left; font-weight: 600; color: #7a3418; white-space: nowrap; border-bottom: 2px solid #f0d0be; }
+  tbody tr:nth-child(even) { background: #fdf7f4; }
+  tbody tr:hover { background: #fdeee5; }
+  tbody td { padding: 8px 13px; border-bottom: 1px solid #f0e0d6; white-space: nowrap; }
+  .kutu-cell { font-weight: 700; color: #d25e28; }
+  .kat-cell  { font-weight: 600; color: #7a3418; font-style: italic; }
+  .kat-filter-wrap { display: flex; align-items: flex-start; gap: 12px; width: 100%; }
+  .kat-filter-wrap .btn-group { flex: 1; }
+  .sadece-btn { padding: 8px 18px; border: 2px solid #b91c1c; background: white; color: #b91c1c; border-radius: 20px; font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: all 0.18s; white-space: nowrap; opacity: 0.3; pointer-events: none; align-self: flex-start; }
+  .sadece-btn:hover { background: #fee2e2; }
+  .sadece-btn.enabled { opacity: 1; pointer-events: auto; }
+  .sadece-btn.active { background: #b91c1c; color: white; }
+  .search-row { background: white; border-radius: 10px; padding: 16px 20px; box-shadow: 0 1px 5px rgba(160,71,32,0.1); }
+  .search-input { width: 100%; padding: 10px 16px; border: 2px solid #d25e28; border-radius: 20px; font-size: 0.95rem; color: #2e1a0e; outline: none; transition: border-color 0.18s; }
+  .search-input:focus { border-color: #7a3418; }
+  .search-input::placeholder { color: #c0a090; }
+</style>
+</head>
+<body>
+<header>
+  <h1>&#128230; Kutu Kategorileri</h1>
+  <p>Kutu ve/veya kategori secerek urunleri filtreleyin</p>
+</header>
+<div class="container">
+  <div class="filters">
+    <div class="filter-row">
+      <div class="filter-label">Kutu</div>
+      <div class="btn-group" id="kutu-grid"></div>
+    </div>
+    <div class="filter-row">
+      <div class="filter-label">Kategori</div>
+      <div class="kat-filter-wrap">
+        <div class="btn-group" id="kat-grid"></div>
+        <button class="sadece-btn" id="sadece-btn">Sadece</button>
+      </div>
+    </div>
+    <div class="search-row">
+      <div class="filter-label">Ara</div>
+      <input type="text" class="search-input" id="search-input" placeholder="Herhangi bir degerde ara..." />
+    </div>
+  </div>
+  <div id="results"></div>
+</div>
+<script>
+var DATA = {"kutular": ["KU1", "KU2", "KU3", "KU4", "KU5", "KU6", "KU7", "KU8", "Kutusuz"], "kategoriler": ["barware", "coffeware", "cookware", "pastryware", "specialty", "service"], "file_data": {"EK": {"headers": ["EK", "Kalınlık", "İç Yükseklik", "Dış Yükseklik", "Taban Boyu", "Top. Ağırlık", "Kutu", "Kategori"], "kutu_col": 6, "kat_col": 7, "rows": [["EK", "1.5mm", "10.0cm", "", "", "", "KU3", "barware"]]}, "HK": {"headers": ["HK", "Kalınlık", "Gövde Yüksekliği", "Astar Boyu", "Taban Boyu", "Ağız Boyu", "Astar Ağırlık", "Kulp Ağırlık", "Top. Ağırlık", "Perçin", "Kapasite", "Kutu", "Kategori"], "kutu_col": 11, "kat_col": 12, "rows": [["HK30", "1.5mm", "10.0cm", "38cm", "", "", "", "", "", "", "4L", "Kutusuz", "barware, pastryware"], ["HK35", "1.5mm", "12.0cm", "46cm", "", "", "", "", "", "", "6L", "Kutusuz", "barware, pastryware"], ["HK40", "1.5mm", "14(reçete)\n16(internet)", "52cm", "22.0cm", "", "", "", "", "", "15L", "Kutusuz", "barware, pastryware"]]}, "JL": {"headers": ["JL", "Kalınlık", "Yükseklik", "Astar Boyu", "Taban Boyu", "Ağız Boyu", "Astar Ağırlık", "Top. Ağırlık", "Kutu", "Kategori"], "kutu_col": 8, "kat_col": 9, "rows": [["JL35", "1.5mm", "9cm", "16.5cm", "6.5cm", "8.5cm", "", "334gr", "KU3", "barware"]]}, "JS": {"headers": ["JS", "Kalınlık", "Gövde Yükseklik", "Gövde Kal.", "Astar Boyu", "Taban Boyu", "Astar Ağırlık", "Top. Ağırlık", "Kutu", "Kategori"], "kutu_col": 8, "kat_col": 9, "rows": [["JS", "1.5mm", "", "", "", "", "", "97.5gr", "KU6", "barware"]]}, "KMN": {"headers": ["KMN", "Yükseklik", "Kalınlık", "Taban Boyu", "Astar Boyu", "Ağız Boyu", "Astar Ağırlık", "Top. Ağırlık", "Kutu", "Kategori"], "kutu_col": 8, "kat_col": 9, "rows": [["KMN", "13.5cm", "1.5mm", "9cm", "22cm", "9.5cm", "480gr", "480gr", "KU3", "barware"]]}, "LYL": {"headers": ["LYL", "Yükseklik", "Kalınlık", "Astar Boyu", "Taban Boyu", "Ağız Boyu", "Astar Ağırlık", "Top. Ağırlık", "Kutu", "Kategori"], "kutu_col": 8, "kat_col": 9, "rows": [["LYL-2", "5.0cm", "1.0mm", "9cm", "2.5cm", "3.5cm", "100gr", "45gr", "KU5", "barware, coffeware"], ["LYLL-6", "5.0cm", "1.0mm", "9cm", "2.5cm", "3.5cm", "100gr", "45gr", "KU6", "barware, coffeware"]]}, "MEST": {"headers": ["MEST", "Yükseklik", "Kalınlık", "Taban Boyu", "Astar Boyu", "Ağız Boyu", "Astar Ağırlık", "Top. Ağırlık", "Kapasite (cc)", "Kutu", "Kategori"], "kutu_col": 9, "kat_col": 10, "rows": [["MEST-2", "5.5cm", "1mm", "4cm", "", "4cm", "", "", "5cl", "KU5", "barware, coffeware"], ["MEST-6", "5.5cm", "1mm", "4cm", "", "4cm", "", "", "5cl", "KU6", "barware, coffeware"]]}, "MESTKAL": {"headers": ["MESTKAL", "Yükseklik", "Kalınlık", "Astar Boyu", "Taban Boyu", "Ağız Boyu", "Astar Ağırlık", "Top. Ağırlık", "Kutu", "Kategori"], "kutu_col": 8, "kat_col": 9, "rows": [["MESTKAL", "3cm", "1.0mm", "8.5cm", "5cm", "", "", "44g", "KU5", "barware"]]}, "ML": {"headers": ["ML", "Yükseklik", "Kalınlık", "Astar Boyu", "Taban Boyu", "Ağız Boyu", "Astar Ağırlık", "Top. Ağırlık", "Kutu", "Kategori"], "kutu_col": 8, "kat_col": 9, "rows": [["ML33", "9.5cm", "1.5mm", "17", "5cm", "7cm", "300gr", "288gr", "KU3", "barware"], ["ML55", "12cm", "1.5mm", "19", "6cm", "8cm", "400gr", "352gr", "KU3", "barware"]]}, "SKA": {"headers": ["SKA", "Yükseklik Alt", "Yükseklik Üst", "Kalınlık Alt", "Kalınlık Üst", "Astar Boyu", "Taban Boyu", "Ağız Boyu", "Astar Ağırlık", "Top. Ağırlık", "Kutu", "Kategori"], "kutu_col": 10, "kat_col": 11, "rows": [["SKA25", "", "", "1.5mm", "", "19cm", "", "", "", "", "KU4", "barware"], ["SKA33", "14cm", "13.5cm", "1.5mm", "", "20cm", "", "", "", "", "KU4", "barware"], ["SKA55", "15cm", "16cm", "1.5mm", "", "22cm", "", "", "", "", "KU4", "barware"]]}, "SKR": {"headers": ["SKR", "Yükseklik Alt", "Yükseklik Üst", "Kalınlık Alt", "Kalınlık Üst", "Astar Boyu Alt", "Astar Boyu Üst", "Taban Boyu Alt", "Taban Boyu Üst", "Ağız Boyu Alt", "Ağız Boyu Üst", "Astar Ağırlık Alt", "Astar Ağırlık Üst", "Top. Ağırlık", "Kutu", "Kategori"], "kutu_col": 14, "kat_col": 15, "rows": [["SKR33", "14cm", "13.5", "1.5mm", "1.5mm", "20-19cm", "", "6cm", "", "", "", "750gr", "", "703g", "KU4", "barware"], ["SKR55", "16cm", "15cm", "1.5mm", "1.5mm", "22-20cm", "", "7cm", "", "", "", "850gr", "", "", "KU4", "barware"]]}, "SKT": {"headers": ["SKT", "Yükseklik Alt", "Yükseklik Üst", "Yükseklik Kapak", "Kalınlık Alt", "Kalınlık Üst", "Kalınlık Kapak", "Kalınlık Süzgeç", "Astar Boyu Alt", "Astar Boyu Üst", "Astar Boyu Kapak", "Astar Boyu Süzgeç", "Taban Boyu Alt", "Taban Boyu Üst", "Taban Boyu Kapak", "Ağız Boyu Alt", "Ağız Boyu Üst", "Astar Ağrılığı Alt", "Astar Ağırlığı Üst", "Astar Ağırlığı Kapak", "Top. Ağırlık", "Kapasite", "Kutu", "Kategori"], "kutu_col": 22, "kat_col": 23, "rows": [["SKT", "13.5-14cm", "7cm", "1.5cm", "1.5mm", "1.0mm", "1.0mm", "1.0mm", "20cm", "14cm", "", "4cm", "6cm", "9.5cm", "4cm", "", "", "750gr", "", "", "473.5gr", "400ml", "KU4", "barware"]]}, "C": {"headers": ["C", "Yükseklik", "Kalınlık", "Astar Boyu", "Taban Boyu", "Ağız Boyu", "Astar Ağırlık", "Kulp Ağırlık", "Top. Ağırlık", "Perçin", "Kutu", "Kategori"], "kutu_col": 10, "kat_col": 11, "rows": [["C1", "6.5cm", "1.5mm", "12cm", "4.5cm", "5cm", "145g", "48g", "193g", "2", "KU1", "coffeware"], ["C2", "7.5cm", "1.5mm", "14cm", "5cm", "6cm", "190g", "73g", "263g", "2", "KU1", "coffeware"], ["C3", "9cm", "1.5mm", "16cm", "6cm", "7cm", "263g", "90g", "352g", "3", "KU1", "coffeware"], ["C4", "10.5cm", "1.5mm", "19cm", "7.5cm", "8.5cm", "320g", "95g", "415g", "3", "KU2", "coffeware"]]}, "HUN": {"headers": ["HUN", "Yükseklik", "Kalınlık", "Astar Boyu", "Geniş Ağız Boyu", "Dar Ağız Boyu", "Astar Ağırlık", "Top. Ağırlık", "Kutu", "Kategori"], "kutu_col": 8, "kat_col": 9, "rows": [["HUN", "8.0cm", "1.0mm", "14.0cm", "11.0cm", "3.5cm", "", "", "KU3", "coffeware"]]}, "SC": {"headers": ["SC", "Yükseklik", "Kalınlık", "Astar Boyu", "Taban Boyu", "Ağız Boyu", "Astar Ağırlık", "Kulp Ağırlık", "Top. Ağırlık", "Kapasite", "Kutu", "Kategori"], "kutu_col": 10, "kat_col": 11, "rows": [["25", "", "1.5mm", "", "", "", "", "", "", "", "KU3", "coffeware"], ["45", "10.5cm", "1.5mm", "", "", "", "", "", "", "", "KU3", "coffeware"], ["60", "", "1.5mm", "", "", "", "", "", "", "", "KU3", "coffeware"]]}, "STD": {"headers": ["STD", "Yükseklik", "Kalınlık", "Kutu", "Kategori"], "kutu_col": 3, "kat_col": 4, "rows": [["STD1", "11cm", "4mm", "KU1", "coffeware"], ["STD2", "11cm", "4mm", "Kutusuz", "coffeware"], ["STD3", "11cm", "4mm", "Kutusuz", "coffeware"]]}, "SUBAR": {"headers": ["SUBAR", "Yükseklik", "Kalınlık", "Astar Boyu", "Taban Boyu", "Ağız Boyu", "Astar Ağırlık", "Top. Ağırlık", "Kapasite", "Kutu", "Kategori"], "kutu_col": 9, "kat_col": 10, "rows": [["SUBAR", "10.5cm", "1.0mm", "15cm", "5cm", "7.5cm", "150gr", "130gr", "200ml", "KU3", "coffeware, barware"]]}, "TSY": {"headers": ["TSY", "Yükseklik", "Kalınlık", "Astar Boyu", "Astar Ağırlık", "Kulp Ağırlık", "Top. Ağırlık", "Perçin", "Kutu", "Kategori"], "kutu_col": 8, "kat_col": 9, "rows": [["20", "", "1.5mm", "", "", "", "", "3", "Kutusuz", "coffeware,barware,service"], ["25", "2.5cm", "1.5mm", "", "", "", "", "3", "Kutusuz", "coffeware,barware,service"], ["30", "3cm", "1.5mm", "", "", "", "", "3", "Kutusuz", "coffeware,barware,service"]]}, "AST": {"headers": ["AST", "Yükseklik", "Kalınlık", "Astar Boyu", "Taban Boyu", "Ağız Boyu", "Astar Ağırlık", "Kulp Tip", "Kulp Ağırlık", "Top. Ağırlık", "Perçin", "Kapasite (cc)", "Kutu", "Kategori"], "kutu_col": 12, "kat_col": 13, "rows": [["AST12", "4cm", "2mm", "18cm", "10cm", "12.5cm", "", "", "", "680gr", "5", "", "KU4", "cookware"], ["AST16", "5cm", "2mm", "22cm", "11cm", "", "760gr", "", "", "900gr", "5", "", "Kutusuz", "cookware"], ["AST20", "6cm", "2.5mm", "27cm", "16cm", "", "1250gr", "", "450gr", "1450gr", "5", "", "Kutusuz", "cookware"], ["AST24", "7cm", "2.5mm", "31cm", "20cm", "", "1700gr", "", "828gr", "2450gr", "8", "", "Kutusuz", "cookware"], ["AST28", "8cm", "2.5mm", "38cm", "24cm", "", "2495gr", "", "", "3750gr", "8", "", "Kutusuz", "cookware"], ["KAST12", "4cm", "2mm", "18cm", "10cm", "", "", "", "", "", "5", "", "KU4", "coffeware, pastryware"], ["KAST16", "5cm", "2mm", "22cm", "11cm", "", "760gr", "", "", "", "5", "", "Kutusuz", "coffeware, pastryware"], ["KAST20", "6cm", "2.5mm", "27cm", "16cm", "", "1250gr", "", "450gr", "", "5", "", "Kutusuz", "coffeware, pastryware"], ["KAST24", "7cm", "2.5mm", "31cm", "20cm", "", "1700gr", "", "828gr", "", "8", "", "Kutusuz", "coffeware, pastryware"], ["KAST28", "8cm", "2.5mm", "38cm", "24cm", "", "2495gr", "", "", "", "8", "", "Kutusuz", "coffeware, pastryware"]]}, "AT": {"headers": ["AT", "Yükseklik", "Kalınlık", "Astar Boyu", "Taban Boyu", "Ağız Boyu", "Astar Ağırlık", "Kulp Tip", "Kulp Ağırlık", "Top. Ağırlık", "Perçin", "Kapasite (cc)", "Kutu", "Kategori", "nan", "nan"], "kutu_col": 12, "kat_col": 13, "rows": [["AT8", "3.0cm", "1.0mm", "", "", "", "", "", "", "", "6", "", "KU_", "cookware, service", "", "8.5 kalıp"], ["AT10", "3.5cm", "1.5mm", "", "", "10.5cm", "", "", "", "", "6", "", "KU_", "cookware, service", "", ""], ["AT12", "3.5cm", "1.5mm", "", "", "12.0cm", "", "", "", "", "6", "", "KU_", "cookware", "", "NS16 Kulp takılacak"], ["AT24", "7.0cm", "3mm", "", "", "", "", "", "", "2900gr", "6", "2.4L", "Kutusuz", "cookware", "", ""], ["AT26", "7.0cm", "3mm", "", "", "", "", "", "", "3600gr", "6", "3.2L", "Kutusuz", "cookware", "", ""], ["AT28", "7.5cm", "3mm", "", "", "", "", "", "", "4100gr", "6", "4L", "Kutusuz", "cookware", "", ""], ["AT30", "7.5cm", "3mm", "", "", "", "", "", "", "5000gr", "6", "5L", "Kutusuz", "cookware", "", ""], ["AT32", "8.0cm", "3mm", "", "", "", "", "", "", "6000gr", "6", "6L", "Kutusuz", "cookware", "", ""], ["BAT35", "9.0cm", "3mm", "", "", "", "", "", "", "7200gr", "6", "", "Kutusuz", "cookware", "", ""], ["BAT40", "10.0cm", "3mm", "", "", "", "", "", "", "8500gr", "6", "", "Kutusuz", "cookware", "", ""], ["BAT45", "", "3mm", "", "", "", "", "", "", "10500gr", "6", "", "Kutusuz", "cookware", "", ""], ["BAT50", "14cm", "3mm", "", "", "", "", "", "", "10150gr", "6", "", "Kutusuz", "cookware", "", ""], ["KAT24", "7.0cm", "3mm", "", "", "", "", "", "", "", "6", "2.4L", "Kutusuz", "barware, cookware", "", ""], ["KAT26", "", "3mm", "", "", "", "", "", "", "", "6", "3.2L", "Kutusuz", "barware, cookware", "", ""], ["KAT28", "7.5cm", "3mm", "", "", "", "", "", "", "", "6", "4L", "Kutusuz", "barware, cookware", "", ""], ["KAT30", "7.5cm", "3mm", "", "", "", "", "", "", "", "6", "5L", "Kutusuz", "barware, cookware", "", ""], ["KAT32", "8.0cm", "3mm", "", "", "", "", "", "", "", "6", "6L", "Kutusuz", "barware, cookware", "", ""]]}, "EST": {"headers": ["EST", "Yükseklik", "Kalınlık", "Astar Boyu", "Taban Boyu", "Ağız Çapı", "Astar Ağırlık", "Kulp Tip", "Kulp Ağırlık", "Top. Ağırlık", "Perçin", "Kapasite", "Kutu", "Kategori"], "kutu_col": 12, "kat_col": 13, "rows": [["EST10", "", "", "", "", "", "", "", "", "", "", "", "KU_", "service"], ["EST20", "20.0cm", "2.0mm", "38cm", "16cm", "20.5cm", "", "", "", "2.90kg", "6", "6L", "Kutusuz", "barware, cookware"], ["EST25", "26.0cm", "2.5mm", "48cm", "22.0cm", "26.0cm", "", "", "", "4.45kg", "6", "12L", "Kutusuz", "cookware"], ["EST30", "30.0cm", "2.5mm", "54cm", "24cm", "", "", "", "", "6.00kg", "6", "20L", "Kutusuz", "cookware"], ["EST35", "35.0cm", "2.5mm", "66cm", "29cm", "", "8500gr", "", "", "8.50kg", "6", "33L", "Kutusuz", "cookware"], ["EST40", "40.0cm", "2.5mm", "", "", "", "", "", "", "11.00kg", "6", "50L", "Kutusuz", "cookware"]]}, "NT": {"headers": ["NT", "Yükseklik", "Kalınlık", "Astar Boyu", "Taban Boyu", "Ağız Boyu", "Astar Ağırlığı", "Kulp Apırlığı", "Toplam Ağırlık", "Top. Yüks", "Perçin", "Kutu", "Kategori"], "kutu_col": 11, "kat_col": 12, "rows": [["NT20", "5cm", "2.5mm", "24cm", "12,5cm", "", "1000gr", "400gr", "1400gr", "", "5", "Kutusuz", "cookware"], ["NT22", "5cm", "2.5mm", "26cm", "14,5cm", "", "1235gr", "445r", "1600gr", "", "5", "Kutusuz", "cookware"], ["NT24", "5cm", "2.5mm", "28cm", "16,5cm", "", "", "", "2000gr", "", "5", "Kutusuz", "cookware"], ["NT26", "5.5cm", "2.5mm", "31cm", "18,5cm", "", "", "", "2250gr", "", "5", "Kutusuz", "cookware"], ["NT28", "5.5cm", "2.5mm", "32cm", "21cm", "", "", "", "2550gr", "", "5", "Kutusuz", "cookware"], ["NT30", "5.5cm", "2.5mm", "34cm", "23cm", "", "", "", "3000gr", "", "5", "Kutusuz", "cookware"]]}, "YST": {"headers": ["YST", "Yükseklik", "Kalınlık", "Astar Boyu", "Taban Boyu", "Ağız Boyu", "Astar Ağırlık", "Kulp Tip", "Kulp Ağırlık", "Top. Ağırlık", "Perçin", "Kapasite", "Kutu", "Kategori"], "kutu_col": 12, "kat_col": 13, "rows": [["YST8", "", "1,5mm", "12cm", "", "", "", "", "", "350gr", "5", "", "Kutusuz", "cookware, service"], ["YST10", "", "1,5mm", "19cm", "", "", "", "", "", "500gr", "5", "", "Kutusuz", "cookware, service"], ["YST12", "7cm", "2mm", "21cm", "", "", "", "", "", "1000gr", "5", "0.7L", "Kutusuz", "cookware"], ["YST16", "9cm", "2.5mm", "28cm", "", "", "", "", "", "1750gr", "5", "1.5L", "Kutusuz", "cookware"], ["YST20", "11cm", "2.5mm", "34cm", "", "", "", "", "", "2500gr", "5", "3.5L", "Kutusuz", "cookware"], ["YST24", "13cm", "2.5mm", "38cm", "", "", "", "", "", "3100gr", "5", "5.5L", "Kutusuz", "cookware"], ["KYST8", "", "1,5mm", "12cm", "", "", "", "", "", "", "5", "", "Kutusuz", "service"], ["KYST10", "", "1,5mm", "19cm", "", "", "", "", "", "", "5", "", "Kutusuz", "service"], ["KYST12", "7cm", "2mm", "21cm", "", "", "", "", "", "", "5", "0.7L", "Kutusuz", "coffeware, pastryware"], ["KYST16", "9cm", "2.5mm", "28cm", "", "", "", "", "", "", "5", "1.5L", "Kutusuz", "coffeware, pastryware"], ["KYST20", "11cm", "2.5mm", "34cm", "", "", "", "", "", "", "5", "3.5L", "Kutusuz", "coffeware, pastryware"], ["KYST24", "13cm", "2.5mm", "38cm", "", "", "", "", "", "", "5", "5.5L", "Kutusuz", "coffeware, pastryware"]]}, "YT": {"headers": ["YT", "Yükseklik", "Kalınlık", "Astar Boyu", "Taban Boyu", "Ağız Boyu", "Astar Ağırlık", "Kulp Tip", "Kulp Ağırlık", "Top. Ağırlık", "Perçin", "Kapasite", "Kutu", "Kategori"], "kutu_col": 12, "kat_col": 13, "rows": [["YT8", "", "1.5mm", "", "", "", "", "", "", "270gr", "4", "", "KU_", "cookware, service"], ["YT10", "", "1.5mm", "", "", "", "", "", "", "480gr", "", "", "KU_", "cookware, service"], ["YT20", "12.0cm", "2.5mm", "", "", "", "", "", "", "760gr", "6", "3L", "Kutusuz", "cookware"], ["YT22", "12.0cm", "2.5mm", "35.0cm", "17.5cm", "", "2140g", "", "325g", "2465g / 2400gr", "6", "4L", "Kutusuz", "cookware"], ["YT24", "13.5cm", "2.5mm", "", "20.0cm", "25.0cm", "", "", "", "2750gr", "6", "5.5L", "Kutusuz", "cookware"], ["YT26", "14.0cm", "2.5mm", "41.0cm", "22.0cm", "27cm", "2850g", "", "400g", "3300gr", "6", "7L", "Kutusuz", "cookware"], ["YT28", "", "2.5mm", "", "", "", "", "", "", "3750gr", "6", "8.5L", "Kutusuz", "cookware"], ["YT30", "15.0cm", "2.5mm", "45.0cm", "25.0cm", "", "3600g", "", "600g", "4200gr", "6", "10L", "Kutusuz", "cookware"], ["BYT35", "", "2.5mm", "", "", "", "", "", "", "5100gr", "6", "", "Kutusuz", "cookware"], ["BYT40", "", "2.5mm", "", "", "", "", "", "", "6200gr", "6", "", "Kutusuz", "cookware"], ["BYT45", "", "", "", "", "", "", "", "", "7800gr", "6", "", "Kutusuz", "cookware"]]}, "HT": {"headers": ["HT", "Yükseklik", "Kalınlık", "Astar Boyu", "Taban Boyu", "Astar Ağırlık", "Kulp Tip", "Kulp Ağırlık", "Top. Ağırlık", "Perçin", "Kapasite (cc)", "Kutu", "Kategori"], "kutu_col": 11, "kat_col": 12, "rows": [["HT30", "", "", "", "", "", "", "", "", "", "", "Kutusuz", "cookware"], ["HT35", "", "", "", "", "", "", "", "", "", "", "Kutusuz", "cookware"], ["HT40", "", "", "", "", "", "", "", "", "", "", "Kutusuz", "cookware"], ["HT45", "", "", "", "", "", "", "", "", "", "", "Kutusuz", "cookware"], ["HT50", "", "", "", "", "", "", "", "", "", "", "Kutusuz", "cookware"], ["KHT30", "", "", "", "", "", "", "", "", "", "", "Kutusuz", "service"], ["KHT35", "", "", "", "", "", "", "", "", "", "", "Kutusuz", "service"], ["KHT40", "", "", "", "", "", "", "", "", "", "", "Kutusuz", "service"], ["KHT45", "", "", "", "", "", "", "", "", "", "", "Kutusuz", "service"], ["KHT50", "", "", "", "", "", "", "", "", "", "", "Kutusuz", "service"]]}, "PST": {"headers": ["PST", "Yükseklik", "Kalınlık", "Astar Boyu", "Taban Boyu", "Ağız Boyu", "Astar Ağırlık", "Kulp Tip", "Kulp Ağırlık", "Top. Ağırlık", "Kulp Perçin", "Askı Perçin", "Kapasite (cc)", "Kutu", "Kategori"], "kutu_col": 13, "kat_col": 14, "rows": [["PST12", "", "", "", "", "", "", "", "", "", "5", "2", "", "Kutusuz", "pastryware, coffeware"], ["PST16", "11.0cm", "", "", "", "", "", "", "", "", "5", "2", "", "Kutusuz", "pastryware, coffeware"], ["PST20", "", "", "", "", "", "", "", "", "", "5", "2", "", "Kutusuz", "pastryware, coffeware"]]}, "YCK": {"headers": ["AST", "Yükseklik", "Kalınlık", "Astar Boyu", "Taban Boyu", "Ağız Boyu", "Astar Ağırlık", "Kulp Tip", "Kulp Ağırlık", "Top. Ağırlık", "Perçin", "Kapasite (cc)", "Kutu", "Kategori"], "kutu_col": 12, "kat_col": 13, "rows": [["YÇK15", "4cm", "2mm", "", "", "", "", "", "", "", "", "", "Kutusuz", "pastryware"], ["YÇK20", "5cm", "2mm", "", "", "", "", "", "", "", "", "", "Kutusuz", "pastryware"], ["YÇK25", "6cm", "2.5mm", "", "", "", "", "", "", "", "", "", "Kutusuz", "pastryware"], ["YÇK30", "7cm", "2.5mm", "", "", "", "", "", "", "", "", "", "Kutusuz", "pastryware"], ["YÇK35", "8cm", "2.5mm", "", "", "", "", "", "", "", "", "", "Kutusuz", "pastryware"]]}, "AHT": {"headers": ["AHT", "Yükseklik", "Kalınlık", "Astar Boyu", "Taban Boyu", "Ağız Boyu", "Astar Ağırlık", "Kulp Tip", "Kulp Ağırlık", "Top. Ağırlık", "Perçin", "Kapasite (cc)", "Kutu", "Kategori"], "kutu_col": 12, "kat_col": 13, "rows": [["AHT25", "3.0cm", "2.0mm", "", "", "", "", "", "", "", "", "", "Kutusuz", "specialty"], ["AHT30", "3.0cm", "2.0mm", "", "", "", "", "", "", "", "", "", "Kutusuz", "specialty"], ["AHT35", "3.0cm", "2.0mm", "", "", "", "", "", "", "", "", "", "Kutusuz", "specialty"], ["AHT40", "4.0cm", "2.0mm", "", "", "", "", "", "", "", "", "", "Kutusuz", "specialty"], ["AHT45", "4.0cm", "2.0mm", "", "", "", "", "", "", "", "", "", "Kutusuz", "specialty"], ["AHT50", "4.0cm", "2.0mm", "", "", "", "", "", "", "", "", "", "Kutusuz", "specialty"]]}, "BBT": {"headers": ["BBT", "Gövde Yükseklik", "Kapak Yükseklik", "Gövde Kalınlık", "Kapak Kalınlık", "Gövde Boyu", "Gövde Eni", "Astar Ağırlık", "Kulp Ağırlık", "Top. Ağırlık", "Gövde Perçin", "Kapak Perçin", "Kutu", "Kategori"], "kutu_col": 12, "kat_col": 13, "rows": [["BBT25", "7,5cm", "", "2mm", "", "25cm", "9.5cm", "", "", "1.1", "6", "2", "Kutusuz", "specialty"], ["BBT40", "12cm", "", "2mm", "", "40cm", "8cm", "", "", "4.75", "6", "2", "Kutusuz", "specialty"], ["BBT50", "15cm", "", "2mm", "", "50cm", "12cm", "", "", "5.5", "6", "2", "Kutusuz", "specialty"]]}, "MT": {"headers": ["MT", "Gövde Kalınlık", "Kapak Kalınlık", "Gövde Yükseklik", "Kapak Yükseklik", "Gövde Astar Boyu", "Kapak Astar Boyu", "Taban Boyu", "Gövde Astar Ağırlık", "Kapak Astar Ağırlık", "Kulp Ağırlık", "Top. Ağırlık", "Gövde Perçin", "Kapak Perçin", "Kutu", "Kategori"], "kutu_col": 14, "kat_col": 15, "rows": [["MT16", "2.0mm", "1.5mm", "9.0cm", "", "", "", "26.0cm", "", "", "", "1600gr", "6", "6", "Kutusuz", "specialty"], ["MT20", "2.0mm", "1.5mm", "12.0cm", "5.0cm", "34.5cm", "26.0cm", "20.0cm", "", "", "", "2300gr", "6", "6", "Kutusuz", "specialty"]]}, "NS": {"headers": ["NS", "Yükseklik", "Kalınlık", "Astar Boyu", "Taban Boyu", "Astar Ağırlık", "Kulp Tip", "Kulp Ağırlık", "Top. Ağırlık", "Perçin", "Kapasite (cc)", "Kutu", "Kategori"], "kutu_col": 11, "kat_col": 12, "rows": [["14", "3cm", "2mm", "17cm", "9cm", "", "", "", "", "", "", "Kutusuz", "specialty"], ["16", "4cm", "2mm", "19cm", "10cm", "", "", "", "", "6* 3x13", "", "Kutusuz", "specialty"], ["18", "4cm", "2mm", "21cm", "12cm", "", "", "", "", "6* 3x14", "", "KU8", "specialty"], ["20", "4cm", "2mm", "23cm", "13cm", "", "", "", "", "6* 3x15", "", "Kutusuz", "specialty"]]}, "OCT": {"headers": ["OCT", "Yükseklik", "Kalınlık", "Astar Boyu", "Taban Boyu", "Ağız Boyu", "Astar Ağırlık", "Kulp Ağırlık", "Top. Ağırlık", "Kalıp", "Perçin", "Kutu", "Kategori"], "kutu_col": 11, "kat_col": 12, "rows": [["OCT20", "2.5cm", "2mm", "22cm", "19cm", "22cm", "", "", "1100gr", "YT22", "5", "Kutusuz", "specialty"], ["OCT25", "2.5cm", "2.5mm", "28cm", "23cm", "26cm", "", "", "1400gr", "YT26", "5", "Kutusuz", "specialty"], ["OCT30", "2.5cm", "2.5mm", "", "", "30cm", "", "", "1900gr", "EST30", "5", "Kutusuz", "specialty"]]}, "PS": {"headers": ["NS", "Yükseklik", "Kalınlık", "Astar Boyu", "Taban Boyu", "Astar Ağırlık", "Kulp Tip", "Kulp Ağırlık", "Top. Ağırlık", "Perçin", "Kapasite (cc)", "Kutu", "Kategori"], "kutu_col": 11, "kat_col": 12, "rows": [["25", "", "2.0mm", "", "", "", "", "", "", "12", "", "Kutusuz", "specialty"], ["30", "", "2.0mm", "", "", "", "", "", "", "12", "", "Kutusuz", "specialty"], ["35", "", "2.0mm", "", "", "", "", "", "", "12", "", "Kutusuz", "specialty"], ["40", "4.5cm", "2.0mm", "", "", "", "", "", "", "12", "", "Kutusuz", "specialty"]]}, "TK": {"headers": ["TK", "Yükseklik", "Kalınlık", "Astar Boyu", "Taban Boyu", "Astar Ağırlık", "Kulp Tip", "Kulp Ağırlık", "Top. Ağırlık", "Perçin", "Kapasite (cc)", "Kutu", "Kategori"], "kutu_col": 11, "kat_col": 12, "rows": [["10", "", "", "", "", "", "", "", "", "", "", "Kutusuz", "specialty"], ["11", "", "", "", "", "", "", "", "", "", "", "Kutusuz", "specialty"], ["12", "", "", "", "", "", "", "", "", "", "", "Kutusuz", "specialty"], ["16", "", "", "", "", "", "", "", "", "", "", "Kutusuz", "specialty"]]}, "YHT": {"headers": ["YHT", "Yükseklik", "Kalınlık", "Astar Boyu", "Taban Boyu", "Ağız Boyu", "Astar Ağırlık", "Kulp Tip", "Kulp Ağırlık", "Top. Ağırlık", "Perçin", "Kapasite (cc)", "Kutu", "Kategori"], "kutu_col": 12, "kat_col": 13, "rows": [["YHT25", "5.0cm", "2.0mm", "", "", "", "", "", "", "", "", "", "Kutusuz", "specialty"], ["YHT30", "", "2.0mm", "", "", "", "", "", "", "2000gr", "2", "", "Kutusuz", "specialty"], ["YHT35", "5.0cm", "2.0mm", "", "", "", "", "", "", "2600gr", "2", "", "Kutusuz", "specialty"], ["YHT40", "", "2.0mm", "", "", "", "", "", "", "3000gr", "2", "", "Kutusuz", "specialty"], ["YHT45", "", "2.0mm", "", "", "", "", "", "", "4400gr", "2", "", "Kutusuz", "specialty"], ["YHT50", "", "2.0mm", "", "", "", "", "", "", "5600gr", "2", "", "Kutusuz", "specialty"]]}, "YKS": {"headers": ["YKS", "Gövde Yükseklik", "Kapak Yükseklik", "Gövde Kalınlık", "Kapak Kalınlık", "Gövde Astar Boyu", "Kapak Astar Boyu", "Gövde Taban Boyu", "Kapak Taban Boyu", "Gövde Ağız Boyu", "Gövde Kanat Açıklık", "Astar Ağırlık", "Kulp Tip", "Kulp Ağırlık", "Top. Ağırlık", "Perçin", "Kutu", "Kategori"], "kutu_col": 16, "kat_col": 17, "rows": [["YKS12", "", "11.0cm", "2.0mm", "1.5mm", "", "", "", "", "", "", "", "", "", "", "", "Kutusuz", "specialty, service"], ["YKS16", "3.0cm", "13.0cm", "2.0mm", "1.5mm", "", "", "", "", "", "", "", "", "45gr", "1500gr", "", "Kutusuz", "specialty, service"], ["YK20", "3.5cm", "13.0cm", "2.0mm", "1.5mm", "", "", "", "", "", "", "", "", "45gr", "2500gr", "", "Kutusuz", "specialty, service"], ["YKS24", "4.0cm", "", "2.0mm", "1.5mm", "", "", "", "", "", "", "", "", "45gr", "3500gr", "", "Kutusuz", "specialty, service"], ["YKS28", "4.5cm", "", "2.0mm", "1.5mm", "", "", "", "", "", "", "", "", "45gr", "5000gr", "", "Kutusuz", "specialty, service"]]}}};
+var activeKutu = null;
+var activeKat = {};
+var sadeceMode = false;
+var searchTerm = "";
+
+function handleKutuClick(e) {
+  var btn = e.target.closest(".kutu-btn");
+  if (!btn) return;
+  var val = btn.getAttribute("data-val");
+  var all = document.querySelectorAll(".kutu-btn");
+  for (var i = 0; i < all.length; i++) all[i].classList.remove("active");
+  if (val === "__all__") {
+    activeKutu = null;
+    btn.classList.add("active");
+  } else {
+    if (activeKutu === val) {
+      activeKutu = null;
+      document.querySelector('.kutu-btn[data-val="__all__"]').classList.add("active");t.add("active");
+    } else {
+      btn.classList.add("active");
+      activeKutu = val;
+    }
+  }
+  renderResults();
+}
+
+function updateSadeceBtn() {
+  var sadece = document.getElementById("sadece-btn");
+  var count = Object.keys(activeKat).length;
+  if (count === 1) {
+    sadece.classList.add("enabled");
+  } else {
+    sadece.classList.remove("enabled");
+    sadece.classList.remove("active");
+    sadeceMode = false;
+  }
+}
+
+function handleKatClick(e) {
+  var btn = e.target.closest(".kat-btn");
+  if (!btn) return;
+  var val = btn.getAttribute("data-val");
+  if (val === "__all__") {
+    activeKat = {};
+    sadeceMode = false;
+    var all = document.querySelectorAll(".kat-btn");
+    for (var i = 0; i < all.length; i++) all[i].classList.remove("active");
+    btn.classList.add("active");
+  } else {
+    if (activeKat[val]) {
+      delete activeKat[val];
+    } else {
+      activeKat[val] = true;
+    }
+    var hepsi = document.querySelector('.kat-btn[data-val="__all__"]');
+    var anyActive = Object.keys(activeKat).length > 0;
+    hepsi.classList.toggle("active", !anyActive);
+    btn.classList.toggle("active", !!activeKat[val]);
+  }
+  updateSadeceBtn();
+  renderResults();
+}
+
+function handleSadeceClick() {
+  var count = Object.keys(activeKat).length;
+  if (count !== 1) return;
+  sadeceMode = !sadeceMode;
+  document.getElementById("sadece-btn").classList.toggle("active", sadeceMode);
+  renderResults();
+}
+
+function buildButtons() {
+  var kg = document.getElementById("kutu-grid");
+  kg.innerHTML = "";
+  var hk = document.createElement("button");
+  hk.className = "kutu-btn active"; hk.textContent = "Hepsi"; hk.setAttribute("data-val", "__all__");
+  kg.appendChild(hk);
+  for (var i = 0; i < DATA.kutular.length; i++) {
+    var b = document.createElement("button");
+    b.className = "kutu-btn"; b.textContent = DATA.kutular[i]; b.setAttribute("data-val", DATA.kutular[i]);
+    kg.appendChild(b);
+  }
+  kg.removeEventListener("click", handleKutuClick);
+  kg.addEventListener("click", handleKutuClick);
+
+  var katg = document.getElementById("kat-grid");
+  katg.innerHTML = "";
+  var hkat = document.createElement("button");
+  hkat.className = "kat-btn active"; hkat.textContent = "Hepsi"; hkat.setAttribute("data-val", "__all__");
+  katg.appendChild(hkat);
+  for (var j = 0; j < DATA.kategoriler.length; j++) {
+    var b2 = document.createElement("button");
+    b2.className = "kat-btn"; b2.textContent = DATA.kategoriler[j]; b2.setAttribute("data-val", DATA.kategoriler[j]);
+    katg.appendChild(b2);
+  }
+  katg.removeEventListener("click", handleKatClick);
+  katg.addEventListener("click", handleKatClick);
+}
+
+function rowMatchesKutu(row, kutu_col) {
+  if (!activeKutu) return true;
+  return String(row[kutu_col]).trim() === activeKutu;
+}
+
+function rowMatchesKat(row, kat_col) {
+  var selected = Object.keys(activeKat);
+  if (selected.length === 0) return true;
+  var parts = String(row[kat_col]).split(",");
+  var rowKats = {};
+  for (var i = 0; i < parts.length; i++) rowKats[parts[i].trim()] = true;
+  if (sadeceMode) {
+    // exact match: row must have ONLY the selected category (nothing more)
+    var rowKatList = Object.keys(rowKats);
+    if (rowKatList.length !== selected.length) return false;
+    for (var k = 0; k < selected.length; k++) {
+      if (!rowKats[selected[k]]) return false;
+    }
+    return true;
+  }
+  for (var j = 0; j < selected.length; j++) {
+    if (!rowKats[selected[j]]) return false;
+  }
+  return true;
+}
+
+function rowMatchesSearch(row) {
+  if (!searchTerm) return true;
+  for (var i = 0; i < row.length; i++) {
+    if (String(row[i]).toLowerCase().indexOf(searchTerm) !== -1) return true;
+  }
+  return false;
+}
+
+function renderResults() {
+  var container = document.getElementById("results");
+  var matchingFiles = [];
+  var keys = Object.keys(DATA.file_data);
+  for (var i = 0; i < keys.length; i++) {
+    var fname = keys[i];
+    var finfo = DATA.file_data[fname];
+    var filteredRows = [];
+    for (var r = 0; r < finfo.rows.length; r++) {
+      var row = finfo.rows[r];
+      if (rowMatchesKutu(row, finfo.kutu_col) && rowMatchesKat(row, finfo.kat_col) && rowMatchesSearch(row)) filteredRows.push(row);
+    }
+    if (filteredRows.length > 0) matchingFiles.push({ name: fname, headers: finfo.headers, kutu_col: finfo.kutu_col, kat_col: finfo.kat_col, rows: filteredRows });
+  }
+  if (matchingFiles.length === 0) {
+    var lbl = [];
+    if (activeKutu) lbl.push(activeKutu);
+    var selKat2 = Object.keys(activeKat);
+    if (selKat2.length > 0) lbl.push(selKat2.join(" + "));
+    var msg = lbl.length > 0 ? lbl.join(" & ") + " icin kayit bulunamadi." : "Hic kayit bulunamadi.";
+    container.innerHTML = "<div class=\"no-result\">" + msg + "</div>";
+    return;
+  }
+  var lbl2 = [];
+  if (activeKutu) lbl2.push(activeKutu);
+  var selKat = Object.keys(activeKat);
+  if (selKat.length > 0) lbl2.push(selKat.join(" + "));
+  var prefix = lbl2.length > 0 ? lbl2.join(" &amp; ") + " &#8212; " : "";
+  var html = "<div class=\"section-title\">" + prefix + matchingFiles.length + " dosya bulundu</div>";
+  for (var f = 0; f < matchingFiles.length; f++) {
+    var file = matchingFiles[f];
+    html += "<div class=\"file-block\"><div class=\"file-header\"><span>" + file.name + "</span><span class=\"badge\">" + file.rows.length + " satir</span></div><div class=\"table-wrap\"><table><thead><tr>";
+    for (var h = 0; h < file.headers.length; h++) {
+      var hv = file.headers[h];
+      html += "<th>" + (hv && hv !== "nan" ? hv : "&#8212;") + "</th>";
+    }
+    html += "</tr></thead><tbody>";
+    for (var ri = 0; ri < file.rows.length; ri++) {
+      html += "<tr>";
+      var row2 = file.rows[ri];
+      for (var c = 0; c < row2.length; c++) {
+        var cell = (row2[c] !== "" && row2[c] !== "nan") ? row2[c] : "&#8212;";
+        var cls = (c === file.kutu_col) ? " class=\"kutu-cell\"" : (c === file.kat_col ? " class=\"kat-cell\"" : "");
+        html += "<td" + cls + ">" + cell + "</td>";
+      }
+      html += "</tr>";
+    }
+    html += "</tbody></table></div></div>";
+  }
+  container.innerHTML = html;
+}
+
+function init() {
+  buildButtons();
+  var si = document.getElementById("search-input");
+  si.removeEventListener("input", handleSearch);
+  si.addEventListener("input", handleSearch);
+  var sb = document.getElementById("sadece-btn");
+  sb.removeEventListener("click", handleSadeceClick);
+  sb.addEventListener("click", handleSadeceClick);
+  renderResults();
+}
+
+function handleSearch(e) {
+  searchTerm = e.target.value.toLowerCase();
+  renderResults();
+}
+
+var _inited = false;
+function safeInit() { if (_inited) return; _inited = true; init(); }
+document.addEventListener("DOMContentLoaded", safeInit);
+window.addEventListener("load", safeInit);
+</script>
+</body>
+</html>
