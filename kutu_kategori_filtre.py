@@ -187,7 +187,7 @@ function handleKutuClick(e) {
   } else {
     if (activeKutu === val) {
       activeKutu = null;
-      document.querySelector(".kutu-btn[data-val=\\"__all__\\"]").classList.add("active");
+      document.querySelector('.kutu-btn[data-val="__all__"]').classList.add("active");t.add("active");
     } else {
       btn.classList.add("active");
       activeKutu = val;
@@ -224,7 +224,7 @@ function handleKatClick(e) {
     } else {
       activeKat[val] = true;
     }
-    var hepsi = document.querySelector(".kat-btn[data-val=\"__all__\"]");
+    var hepsi = document.querySelector('.kat-btn[data-val="__all__"]');
     var anyActive = Object.keys(activeKat).length > 0;
     hepsi.classList.toggle("active", !anyActive);
     btn.classList.toggle("active", !!activeKat[val]);
