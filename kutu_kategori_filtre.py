@@ -4,7 +4,7 @@ import os
 
 # ============================================================
 #  CONFIGURE YOUR FILES HERE
-#  Add or remove filenames from this list (max ~20 files).
+#  Add or remove filenames from this list
 #  Only files listed here will be read and shown in the HTML.
 # ============================================================
 DATA_FILES = [
